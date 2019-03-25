@@ -1,0 +1,154 @@
+---
+title: "DA401"
+author: "Alex Barnes"
+date: "March 3, 2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lpSolve)
+library(lpSolveAPI)
+```
+
+```{r}
+nutrition <- read.csv("C:/users/alex/OneDrive/Documents/DA401/data/BFPD_csv_07132018/nutrient.csv")
+nutrition <- subset(nutrition, select = -c(X))
+age <- strtoi(readline(prompt = "Enter age: "))
+gender <- tolower(readline(prompt = "Enter sex(m/f): "))
+height <- strtoi(readline(prompt = "Enter height (inches): "))
+height_cm <- height*2.54
+weight <- strtoi(readline(prompt = "Enter weight(lbs): "))
+weight_kg <- weight * 0.45359237
+print("sed - little or no exercise")
+print("light - exercise 1-3 times/week")
+print("moderate - exercise 4-5 times/week")
+print("active - daily exercise or intense exercise 3-4 times / week")
+print("very active - intense exercise 6-7 times/week")
+print("extra active - very intense exercise daily, or physical job")
+
+activity <- tolower(readline(prompt = "Level of activity: "))
+goal <- strtoi(readline(prompt = "How much weight do you want to lose in 1 week: "))
+```
+
+```{r}
+bmr = round(10 * weight_kg + 6.25 * height_cm - 5 * age)
+if (gender == "m"){
+  bmr =  bmr + 5
+} else if (gender == "f") {
+  bmr = bmr - 161
+} else {
+  Print("invalid entry")
+}
+
+protein <- strtoi(readline(prompt = "perentage of calories from protein: "))
+carbs <- strtoi(readline(prompt = "percentage of calories from carbs: "))
+fat <- 100 - protein - carbs
+
+protein_g <- protein*.01*bmr/4
+carbs_g <- carbs*.01*bmr/4
+fat_g <- fat*.01*bmr/9
+
+fiber <- 33.6
+satfat <- bmr*.1/9
+calcium <- 1000
+iron <- 8
+magnesium <- 400
+phosphorus <- 700
+potassium <- 4700
+sodium <- 2300
+zinc <- 11
+copper <- 900
+manganese <- 2.3
+selenium <- 55
+vitA <- 900
+vitE <- 15
+vitD <- 600
+vitC <- 90
+thiamin <- 1.2
+riboflavin <- 1.3
+niacin <- 16
+vitB6 <- 1.3
+vitB12 <- 2.4
+choline <- 550
+vitK <- 120
+folate <- 400
+sugar <- bmr*.1/4
+```
+
+```{r lpsolve}
+lpmodel <-list()
+## Set the coefficients of the decision variables -> C
+lpmodel$C <- c(rep(0, times = nrow(nutrition)))
+
+# Create constraint martix B
+lpmodel$A <- as.matrix(c(c(nutrition$Protein, -protein_g),
+#                      c(nutrition$Calcium..Ca, -calcium),
+                      c(nutrition$Carbohydrate..by.difference, -carbs_g),
+#                      c(nutrition$Cholesterol),
+#                      c(nutrition$Fatty.acids..total.saturated, -satfat),
+#                      c(nutrition$Fatty.acids..total.trans),
+#                      c(nutrition$Fiber..total.dietary, -fiber),
+#                      c(nutrition$Iron..Fe, -iron),
+#                      c(nutrition$Sodium..Na, -sodium),
+#                      c(nutrition$Sugars..total, -sugar),
+                      c(nutrition$Total.lipid..fat., -fat_g),
+#                      c(nutrition$Vitamin.A..IU, -vitA),
+#                      c(nutrition$Vitamin.B.12, -vitB12),
+#                      c(nutrition$Vitamin.C..total.ascorbic.acid, -vitC),
+#                      c(nutrition$Vitamin.D, -vitD),
+#                      c(nutrition$Vitamin.E, -vitE),
+#                      c(nutrition$Zinc..Zn, -zinc),
+                      c(nutrition$Energy, 0)),
+                      nrow = 4, ncol=nrow(nutrition), byrow=T)
+
+
+# Right hand side for the constraints
+lpmodel$B <- c(0, 0, 0, bmr)
+
+# Direction of the constraints
+lpmodel$constranints_direction  <- c("=", "=", "=", "=")
+
+# Find the optimal solution
+optimum <-  lp(direction="max",
+               objective.in = lpmodel$C,
+               const.mat = lpmodel$A,
+               const.dir = lpmodel$constranints_direction,
+               const.rhs = lpmodel$B)#,s
+#               all.int = T)
+
+# Print status: 0 = success, 2 = no feasible solution
+print(optimum$status)
+
+# Display the optimum values for x_4p, x_3p and x_w
+best_sol <- optimum$solution
+#names(best_sol) <- c("x_4p", "x_3p", "x_w") 
+print(best_sol)
+
+# Check the value of objective function at optimal point
+print(paste("Total cost: ", optimum$objval, sep=""))
+
+```
+
+
+```{r gurobi}
+model <- list()
+model$A = matrix(c(c(Foods$Calories.Per.Gram,-2000), #calories 
+                   c(Foods$Protein.Per.Gram,-130), #Protein 
+                   c(Foods$Carbs.Per.Gram,-38), #Carbs 
+                   c(Foods$Fiber.Per.Gram,-56), #Fiber 
+                   c(Foods$Fat.Per.Gram,-30), #Fat 
+                   c(Foods$Price.Per.Gram,0)), #Price 
+                   nrow=6, ncol=nrow(Foods)+1, byrow=T)
+
+model$obj = c(rep(0, times = nrow(Foods)),1) #Maximize n 
+model$modelsense = "max" 
+model$rhs = c(0,0,0,0,0,2000) 
+model$sense = c('>','>','>','>','>','<') 
+model$vtype = 'C' #Continuous, nonnegative by default
+params = list(OutputFlag=0)
+result = gurobi(model, params)
+
+result$objval #Number of customer served, 797.6 
+result$x #Food to buy
+```
