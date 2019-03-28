@@ -1,7 +1,7 @@
 ---
 title: "DA401"
 author: "Alex Barnes"
-date: "March 3, 2019"
+date: "March 3, 2019"35
 output: pdf_document
 ---
 
@@ -9,11 +9,14 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 library(lpSolve)
 library(lpSolveAPI)
+library(readr)
 ```
 
 ```{r}
-nutrition <- read.csv("C:/users/alex/OneDrive/Documents/DA401/data/BFPD_csv_07132018/nutrient.csv")
-nutrition <- subset(nutrition, select = -c(X))
+nutrition <- read_csv("D:/OneDrive/Documents/DA401/data/BFPD_csv_07132018/nutrient.csv")
+ndb_no <- subset(nutrition, select = c(NDB_No))
+nutrition <- subset(nutrition, select = -c(X1, NDB_No))
+sub_nutrition <- nutrition[1:100,]
 age <- strtoi(readline(prompt = "Enter age: "))
 gender <- tolower(readline(prompt = "Enter sex(m/f): "))
 height <- strtoi(readline(prompt = "Enter height (inches): "))
@@ -82,9 +85,9 @@ lpmodel <-list()
 lpmodel$C <- c(rep(0, times = nrow(nutrition)))
 
 # Create constraint martix B
-lpmodel$A <- as.matrix(c(c(nutrition$Protein, -protein_g),
+lpmodel$A <- as.matrix(c(c(sub_nutrition$Protein, -protein_g),
 #                      c(nutrition$Calcium..Ca, -calcium),
-                      c(nutrition$Carbohydrate..by.difference, -carbs_g),
+                      c(sub_nutrition$`Carbohydrate, by difference`, -carbs_g),
 #                      c(nutrition$Cholesterol),
 #                      c(nutrition$Fatty.acids..total.saturated, -satfat),
 #                      c(nutrition$Fatty.acids..total.trans),
@@ -92,14 +95,14 @@ lpmodel$A <- as.matrix(c(c(nutrition$Protein, -protein_g),
 #                      c(nutrition$Iron..Fe, -iron),
 #                      c(nutrition$Sodium..Na, -sodium),
 #                      c(nutrition$Sugars..total, -sugar),
-                      c(nutrition$Total.lipid..fat., -fat_g),
+                      c(sub_nutrition$`Total lipid (fat)`, -fat_g),
 #                      c(nutrition$Vitamin.A..IU, -vitA),
 #                      c(nutrition$Vitamin.B.12, -vitB12),
 #                      c(nutrition$Vitamin.C..total.ascorbic.acid, -vitC),
 #                      c(nutrition$Vitamin.D, -vitD),
 #                      c(nutrition$Vitamin.E, -vitE),
 #                      c(nutrition$Zinc..Zn, -zinc),
-                      c(nutrition$Energy, 0)),
+                      c(sub_nutrition$Energy, 0)),
                       nrow = 4, ncol=nrow(nutrition), byrow=T)
 
 
