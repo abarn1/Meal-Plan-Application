@@ -14,11 +14,10 @@ library(gurobi)
 ```
 
 ```{r}
-nutrition <- read_csv("C:/Users/alex/OneDrive/Documents/DA401/data/BFPD_csv_07132018/nutrient.csv")
+nutrition <- read_csv("D:/OneDrive/Documents/DA401/data/BFPD_csv_07132018/nutrient.csv")
+food <- read_csv("D:/OneDrive/Documents/DA401/data/BFPD_csv_07132018/Products.csv")
 ndb_no <- subset(nutrition, select = c(NDB_No))
 nutrition <- subset(nutrition, select = -c(X1, NDB_No))
-#sub_nutrition <-t(sub_nutrition)
-sub_nutrition <- nutrition[1:250,]
 age <- strtoi(readline(prompt = "Enter age: "))
 gender <- tolower(readline(prompt = "Enter sex(m/f): "))
 height <- strtoi(readline(prompt = "Enter height (inches): "))
@@ -34,10 +33,19 @@ print("extra active - very intense exercise daily, or physical job")
 
 activity <- tolower(readline(prompt = "Level of activity: "))
 goal <- strtoi(readline(prompt = "How much weight do you want to lose in 1 week: "))
+vegetar <- tolower(readline(prompt = "Are you vegetarian (y/n): "))
+vegan <- tolower(readline(prompt = "Are you vegan (y/n): "))
+
+if(vegetar == "y"){
+  #run regex to find vegetarian options
+}
+if(vegan == "y"){
+  #run regex to find vegan options
+}
 ```
 
 ```{r}
-bmr = round(10 * weight_kg + 6.25 * height_cm - 5 * age)
+bmr = round(9.99 * weight_kg + 6.25 * height_cm - 4.92 * age)
 if (gender == "m"){
   bmr =  bmr + 5
 } else if (gender == "f") {
@@ -99,6 +107,7 @@ sugar <- bmr*.1/4
 ```
 
 ```{r lpsolve}
+lpstart = Sys.time()
 lpmodel <-list()
 ## Set the coefficients of the decision variables -> C
 lpmodel$C <- c(rep(0, times = nrow(nutrition)))
@@ -133,44 +142,66 @@ lpmodel$B <- c(protein_g,calcium, carbs_g, satfat, fiber, iron, sodium, sugar, f
 lpmodel$constranints_direction  <- c(">=", ">", ">=", "<=", ">", ">", "<", "<", "<=", ">", ">", ">", ">", ">", ">", "=", "<=")
 
 # Find the optimal solution
+lpstart2 = Sys.time()
 optimum <-  lp(direction="max",
                objective.in = lpmodel$C,
                const.mat = lpmodel$A,
                const.dir = lpmodel$constranints_direction,
                const.rhs = lpmodel$B)#,s
 #               all.int = T)
-
+lpend2 = Sys.time()
 # Print status: 0 = success, 2 = no feasible solution
-print(optimum$status)
+#print(optimum$status)
 
 # Display the optimum values for x_4p, x_3p and x_w
 best_sol <- optimum$solution
 #names(best_sol) <- 
 #print(best_sol)
-index <- list()
-amount <- list()
+lpindex <- list()
+lpamount <- list()
 total = 0
 count = 1
 for (i in best_sol) {
   total = total +1
   if (i != 0){
-    index <- c(index, total)
-    amount <- c(amount, i)
+    lpindex <- c(lpindex, total)
+    lpamount <- c(lpamount, i)
     #index[count] <- total
     #amount[count] <- i
     #count = count +1
   }
 }
-print(index)
-print(amount)
+#print(lpindex)
+#print(lpamount)
 
-# Check the value of objective function at optimal point
-#print(paste("Total cost: ", optimum$objval, sep=""))
+lpndb <- list()
+for (i in lpindex){
+  
+  lpndb <- c(lpndb, ndb_no[i,])
+}
+lpfood <- list()
+lpnut <- matrix()
 
+for (i in lpndb){
+  lpfood <- c(lpfood, match(i,food$NDB_Number))
+}
+lpfoodname <- list()
+count = 0
+for (i in lpfood){
+  count = count + 1
+  lpfoodname <- c(lpfoodname, food$long_name[i], lpamount[count])
+}
+lpend = Sys.time()
+lptime = lpend-lpstart
+lptime
+lptime2 = lpend2 - lpstart2
+lptime2
+lpfoodname
 ```
 
 
 ```{r gurobi}
+gurstart = Sys.time()
 model <- list()
 model$A = matrix(c(c(nutrition$Protein),
                       c(nutrition$`Calcium, Ca`),
@@ -199,8 +230,9 @@ model$rhs = c(protein_g,calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fa
 model$sense = c(">=", ">", ">=", "<=", ">", ">", "<", "<", "<=", ">", ">", ">", ">", ">", ">", "=", "<=")
 model$vtype = 'C' #Continuous, nonnegative by default
 params = list(OutputFlag=0)
+gurstart2 = Sys.time()
 result = gurobi(model, params)
-
+gurend2 = Sys.time()
 #result$objval #Number of customer served, 797.6 
 #result$x #Food to buy
 
@@ -218,8 +250,28 @@ for (i in result$x) {
     #count = count +1
   }
 }
-print(gurindex)
-print(guramount)
+#print(gurindex)
+#print(guramount)
+gurndb <- list()
+for (i in gurindex){
+  gurndb <- c(gurndb, ndb_no[i,])
+}
+gurfood <- list()
+for (i in gurndb){
+  gurfood <- c(gurfood, match(i,food$NDB_Number))
+}
+gurfoodname <- list()
+count = 0
+for (i in gurfood){
+  count = count + 1
+  gurfoodname <- c(gurfoodname, food$long_name[i], guramount[count])
+}
+gurend = Sys.time()
+gurtime = gurend - gurstart
+gurtime
+gurtime2 = gurend2 - gurstart2
+gurtime2
+gurfoodname
 ```
 
 ```{r lpsolveapi}
