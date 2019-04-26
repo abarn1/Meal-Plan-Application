@@ -113,30 +113,28 @@ lpmodel$C <- c(rep(0, times = nrow(nutrition)))
 lpmodel$A <- matrix(c(c(nutrition$Protein),
                       c(nutrition$Calcium),
                       c(nutrition$Carbohydrate),
-#                      c(nutrition$Cholesterol),
                       c(nutrition$`Saturated Fat`),
-#                      c(nutrition$Fatty.acids..total.trans),
                       c(nutrition$Fiber),
                       c(nutrition$Iron),
                       c(nutrition$Sodium),
                       c(nutrition$Sugar),
                       c(nutrition$Fat),
                       c(nutrition$`Vitamin A`),
-                      c(nutrition$`Vitamin B-12`),
+#                      c(nutrition$`Vitamin B-12`),
                       c(nutrition$`Vitamin C`),
-                      c(nutrition$`Vitamin D`),
-                      c(nutrition$`Vitamin E`),
-                      c(nutrition$Zinc),
+#                      c(nutrition$`Vitamin D`),
+#                      c(nutrition$`Vitamin E`),
+#                      c(nutrition$Zinc),
                       c(nutrition$Energy)
                       ),
-                      nrow = 16, ncol=nrow(nutrition), byrow=T)
+                      nrow = 12, ncol=nrow(nutrition), byrow=T)
 
 
 # Right hand side for the constraints
-lpmodel$B <- c(protein_g,calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fat_g, vitA, vitB12, vitC, vitD, vitE, zinc, bmr)
+lpmodel$B <- c(protein_g, calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fat_g, vitA, vitC, bmr)
 
 # Direction of the constraints
-lpmodel$constranints_direction  <- c(">=", ">", ">=", "<=", ">", ">", "<", "<", "<=", ">", ">", ">", ">", ">", ">", "=")
+lpmodel$constranints_direction  <- c(">=", ">=", ">=", "<=", ">=", ">=", "<=", "<=", "<=", ">=", ">=", "=")
 
 # Find the optimal solution
 lpstart2 = Sys.time()
@@ -184,31 +182,31 @@ lpindex
 ```{r gurobi}
 gurstart = Sys.time()
 model <- list()
-model$A = matrix(c(c(nutrition$Protein),
-                      c(nutrition$Calcium),
-                      c(nutrition$Carbohydrate),
-#                      c(nutrition$Cholesterol),
-                      c(nutrition$`Saturated Fat`),
-#                      c(nutrition$Fatty.acids..total.trans),
-                      c(nutrition$Fiber),
-                      c(nutrition$Iron),
-                      c(nutrition$Sodium),
-                      c(nutrition$Sugar),
-                      c(nutrition$Fat),
-                      c(nutrition$`Vitamin A`),
-                      c(nutrition$`Vitamin B-12`),
-                      c(nutrition$`Vitamin C`),
-                      c(nutrition$`Vitamin D`),
-                      c(nutrition$`Vitamin E`),
-                      c(nutrition$Zinc),
-                      c(nutrition$Energy)
+gurnutrition <- nutrition
+gurnutrition[is.na(gurnutrition)]<- 0
+model$A = matrix(c(c(gurnutrition$Protein),
+                      c(gurnutrition$Calcium),
+                      c(gurnutrition$Carbohydrate),
+                      c(gurnutrition$`Saturated Fat`),
+                      c(gurnutrition$Fiber),
+                      c(gurnutrition$Iron),
+                      c(gurnutrition$Sodium),
+                      c(gurnutrition$Sugar),
+                      c(gurnutrition$Fat),
+                      c(gurnutrition$`Vitamin A`),
+#                      c(nutrition$`Vitamin B-12`),
+                      c(gurnutrition$`Vitamin C`),
+#                      c(nutrition$`Vitamin D`),
+#                      c(nutrition$`Vitamin E`),
+#                      c(nutrition$Zinc),
+                      c(gurnutrition$Energy)
                       ),
-                      nrow = 16, ncol=nrow(nutrition), byrow=T)
+                      nrow = 12, ncol=nrow(gurnutrition), byrow=T)
 
 model$obj = c(rep(0, times = nrow(nutrition))) #Maximize n 
 model$modelsense = "max" 
-model$rhs = c(protein_g,calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fat_g, vitA, vitB12, vitC, vitD, vitE, zinc, bmr, 3)
-model$sense = c(">=", ">", ">=", "<=", ">", ">", "<", "<", "<=", ">", ">", ">", ">", ">", ">", "=", "<=")
+model$rhs = c(protein_g, calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fat_g, vitA, vitC, bmr)
+model$sense = c(">=", ">=", ">=", "<=", ">=", ">=", "<=", "<=", "<=", ">=", ">=", "=")
 model$vtype = 'C' #Continuous, nonnegative by default
 params = list(OutputFlag=0)
 gurstart2 = Sys.time()
@@ -294,7 +292,7 @@ write.lp(lpmodelapi,'model.lp',type='lp')
 solve(lpmodelapi)
  
 #this return the proposed solution
-get.objective(lpmodelapi)
+#get.objective(lpmodelapi)
 
 apiresult <-get.primal.solution(lpmodelapi)
 
