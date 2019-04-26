@@ -14,10 +14,7 @@ library(gurobi)
 ```
 
 ```{r}
-nutrition <- read_csv("D:/OneDrive/Documents/DA401/data/BFPD_csv_07132018/nutrient.csv")
-food <- read_csv("D:/OneDrive/Documents/DA401/data/BFPD_csv_07132018/Products.csv")
-ndb_no <- subset(nutrition, select = c(NDB_No))
-nutrition <- subset(nutrition, select = -c(X1, NDB_No))
+nutrition <- read_csv("D:/OneDrive/Documents/DA401/data/nutrition_data.csv")
 age <- strtoi(readline(prompt = "Enter age: "))
 gender <- tolower(readline(prompt = "Enter sex(m/f): "))
 height <- strtoi(readline(prompt = "Enter height (inches): "))
@@ -114,32 +111,32 @@ lpmodel$C <- c(rep(0, times = nrow(nutrition)))
 
 # Create constraint martix B
 lpmodel$A <- matrix(c(c(nutrition$Protein),
-                      c(nutrition$`Calcium, Ca`),
-                      c(nutrition$`Carbohydrate, by difference`),
+                      c(nutrition$Calcium),
+                      c(nutrition$Carbohydrate),
 #                      c(nutrition$Cholesterol),
-                      c(nutrition$`Fatty acids, total saturated`),
+                      c(nutrition$`Saturated Fat`),
 #                      c(nutrition$Fatty.acids..total.trans),
-                      c(nutrition$`Fiber, total dietary`),
-                      c(nutrition$`Iron, Fe`),
-                      c(nutrition$`Sodium, Na`),
-                      c(nutrition$`Sugars, total`),
-                      c(nutrition$`Total lipid (fat)`),
-                      c(nutrition$`Vitamin A, IU`),
+                      c(nutrition$Fiber),
+                      c(nutrition$Iron),
+                      c(nutrition$Sodium),
+                      c(nutrition$Sugar),
+                      c(nutrition$Fat),
+                      c(nutrition$`Vitamin A`),
                       c(nutrition$`Vitamin B-12`),
-                      c(nutrition$`Vitamin C, total ascorbic acid`),
+                      c(nutrition$`Vitamin C`),
                       c(nutrition$`Vitamin D`),
                       c(nutrition$`Vitamin E`),
-                      c(nutrition$`Zinc, Zn`),
-                      c(nutrition$Energy),
-                      c(rep(1,times = nrow(nutrition)))),
-                      nrow = 17, ncol=nrow(nutrition), byrow=T)
+                      c(nutrition$Zinc),
+                      c(nutrition$Energy)
+                      ),
+                      nrow = 16, ncol=nrow(nutrition), byrow=T)
 
 
 # Right hand side for the constraints
-lpmodel$B <- c(protein_g,calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fat_g, vitA, vitB12, vitC, vitD, vitE, zinc, bmr, 3)
+lpmodel$B <- c(protein_g,calcium, carbs_g, satfat, fiber, iron, sodium, sugar, fat_g, vitA, vitB12, vitC, vitD, vitE, zinc, bmr)
 
 # Direction of the constraints
-lpmodel$constranints_direction  <- c(">=", ">", ">=", "<=", ">", ">", "<", "<", "<=", ">", ">", ">", ">", ">", ">", "=", "<=")
+lpmodel$constranints_direction  <- c(">=", ">", ">=", "<=", ">", ">", "<", "<", "<=", ">", ">", ">", ">", ">", ">", "=")
 
 # Find the optimal solution
 lpstart2 = Sys.time()
@@ -151,52 +148,36 @@ optimum <-  lp(direction="max",
 #               all.int = T)
 lpend2 = Sys.time()
 # Print status: 0 = success, 2 = no feasible solution
-#print(optimum$status)
+print(optimum$status)
 
-# Display the optimum values for x_4p, x_3p and x_w
+#determine the foods to be used in the best solution
 best_sol <- optimum$solution
-#names(best_sol) <- 
-#print(best_sol)
-lpindex <- list()
+lpfood <- list()
 lpamount <- list()
+lpindex <- list()
 total = 0
 count = 1
 for (i in best_sol) {
   total = total +1
   if (i != 0){
+    lpfood <- c(lpfood, nutrition$long_name[total])
     lpindex <- c(lpindex, total)
     lpamount <- c(lpamount, i)
-    #index[count] <- total
-    #amount[count] <- i
-    #count = count +1
   }
 }
+
 #print(lpindex)
 #print(lpamount)
 
-lpndb <- list()
-for (i in lpindex){
-  
-  lpndb <- c(lpndb, ndb_no[i,])
-}
-lpfood <- list()
-lpnut <- matrix()
-
-for (i in lpndb){
-  lpfood <- c(lpfood, match(i,food$NDB_Number))
-}
-lpfoodname <- list()
-count = 0
-for (i in lpfood){
-  count = count + 1
-  lpfoodname <- c(lpfoodname, food$long_name[i], lpamount[count])
-}
 lpend = Sys.time()
+
 lptime = lpend-lpstart
 lptime
 lptime2 = lpend2 - lpstart2
 lptime2
-lpfoodname
+lpfood
+lpamount
+lpindex
 ```
 
 
@@ -204,25 +185,25 @@ lpfoodname
 gurstart = Sys.time()
 model <- list()
 model$A = matrix(c(c(nutrition$Protein),
-                      c(nutrition$`Calcium, Ca`),
-                      c(nutrition$`Carbohydrate, by difference`),
+                      c(nutrition$Calcium),
+                      c(nutrition$Carbohydrate),
 #                      c(nutrition$Cholesterol),
-                      c(nutrition$`Fatty acids, total saturated`),
+                      c(nutrition$`Saturated Fat`),
 #                      c(nutrition$Fatty.acids..total.trans),
-                      c(nutrition$`Fiber, total dietary`),
-                      c(nutrition$`Iron, Fe`),
-                      c(nutrition$`Sodium, Na`),
-                      c(nutrition$`Sugars, total`),
-                      c(nutrition$`Total lipid (fat)`),
-                      c(nutrition$`Vitamin A, IU`),
+                      c(nutrition$Fiber),
+                      c(nutrition$Iron),
+                      c(nutrition$Sodium),
+                      c(nutrition$Sugar),
+                      c(nutrition$Fat),
+                      c(nutrition$`Vitamin A`),
                       c(nutrition$`Vitamin B-12`),
-                      c(nutrition$`Vitamin C, total ascorbic acid`),
+                      c(nutrition$`Vitamin C`),
                       c(nutrition$`Vitamin D`),
                       c(nutrition$`Vitamin E`),
-                      c(nutrition$`Zinc, Zn`),
-                      c(nutrition$Energy),
-                      c(rep(1,times = nrow(nutrition)))),
-                      nrow = 17, ncol=nrow(nutrition), byrow=T)
+                      c(nutrition$Zinc),
+                      c(nutrition$Energy)
+                      ),
+                      nrow = 16, ncol=nrow(nutrition), byrow=T)
 
 model$obj = c(rep(0, times = nrow(nutrition))) #Maximize n 
 model$modelsense = "max" 
@@ -236,42 +217,30 @@ gurend2 = Sys.time()
 #result$objval #Number of customer served, 797.6 
 #result$x #Food to buy
 
-gurindex <- list()
+gurfood <- list()
 guramount <- list()
+gurindex <- list()
 total = 0
 count = 1
 for (i in result$x) {
   total = total +1
   if (i != 0){
-    gurindex <- c(gurindex, total)
-    guramount <- c(guramount, i)
-    #index[count] <- total
-    #amount[count] <- i
-    #count = count +1
+    gurfood <- c(lpfood, nutrition$long_name[total])
+    gurindex <- c(lpindex, total)
+    guramount <- c(lpamount, i)
   }
 }
-#print(gurindex)
-#print(guramount)
-gurndb <- list()
-for (i in gurindex){
-  gurndb <- c(gurndb, ndb_no[i,])
-}
-gurfood <- list()
-for (i in gurndb){
-  gurfood <- c(gurfood, match(i,food$NDB_Number))
-}
-gurfoodname <- list()
-count = 0
-for (i in gurfood){
-  count = count + 1
-  gurfoodname <- c(gurfoodname, food$long_name[i], guramount[count])
-}
+
+
+
 gurend = Sys.time()
 gurtime = gurend - gurstart
 gurtime
 gurtime2 = gurend2 - gurstart2
 gurtime2
-gurfoodname
+gurfood
+guramount
+gurindex
 ```
 
 ```{r lpsolveapi}
